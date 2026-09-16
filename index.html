@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Case anonimizado de Business Analysis, integrações e qualidade em um aplicativo de motoristas para logística portuária.">
+  <meta name="author" content="Laís Moreira">
+  <meta name="theme-color" content="#071827">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Aplicativo de Motoristas para Logística Portuária">
+  <meta property="og:description" content="Da visibilidade do estoque em trânsito ao go-live: requisitos, APIs REST, QR Code, SIT/UAT e piloto mobile.">
+  <meta property="og:url" content="https://laismoreira07.github.io/driver-app-port-logistics-case-study/">
+  <meta property="og:image" content="https://laismoreira07.github.io/driver-app-port-logistics-case-study/assets/demo-flow-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://laismoreira07.github.io/driver-app-port-logistics-case-study/">
+  <title>Aplicativo de Motoristas para Logística Portuária | Laís Moreira</title>
+  <style>
+    :root {
+      --bg: #06121e;
+      --bg-deep: #030b13;
+      --surface: #0a1f2d;
+      --surface-2: #0d2937;
+      --surface-3: #103442;
+      --text: #f7fafc;
+      --muted: #a9bbc8;
+      --line: rgba(148, 163, 184, .2);
+      --teal: #2dd4bf;
+      --teal-dark: #0f766e;
+      --cyan: #38bdf8;
+      --orange: #f59e0b;
+      --mustard: #d6a21d;
+      --burgundy: #8b2942;
+      --success: #4ade80;
+      --shadow: 0 22px 55px rgba(0, 0, 0, .28);
+      --radius: 24px;
+      --radius-sm: 15px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 80% 4%, rgba(45, 212, 191, .13), transparent 28rem),
+        radial-gradient(circle at 4% 28%, rgba(56, 189, 248, .08), transparent 24rem),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    .skip-link {
+      position: fixed;
+      left: 16px;
+      top: -60px;
+      z-index: 100;
+      padding: 10px 16px;
+      color: #021014;
+      background: var(--teal);
+      border-radius: 8px;
+      font-weight: 800;
+      transition: top .2s ease;
+    }
+    .skip-link:focus { top: 16px; }
+
+    .container {
+      width: min(calc(100% - 40px), var(--max));
+      margin-inline: auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(148, 163, 184, .14);
+      background: rgba(3, 11, 19, .78);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+      white-space: nowrap;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      color: #021014;
+      background: linear-gradient(135deg, var(--teal), var(--orange));
+      border-radius: 12px;
+      box-shadow: 0 10px 28px rgba(45, 212, 191, .18);
+      font-size: .82rem;
+      font-weight: 900;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: #c9d6df;
+      font-size: .88rem;
+      font-weight: 700;
+    }
+    .nav-links a { text-decoration: none; }
+    .nav-links a:hover, .nav-links a:focus-visible { color: var(--teal); }
+
+    .nav-cta {
+      padding: 9px 14px;
+      border: 1px solid rgba(45, 212, 191, .38);
+      border-radius: 999px;
+      background: rgba(45, 212, 191, .08);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 96px 0 66px;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 8% -20% auto 48%;
+      height: 420px;
+      border: 1px solid rgba(45, 212, 191, .08);
+      border-radius: 50%;
+      transform: rotate(-9deg);
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.04fr .96fr;
+      align-items: center;
+      gap: 60px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 20px;
+      color: #7ce8da;
+      font-size: .76rem;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--teal), var(--orange));
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 760px;
+      margin-bottom: 22px;
+      font-size: clamp(2.65rem, 6vw, 5.2rem);
+      line-height: .98;
+      letter-spacing: -.06em;
+    }
+    h1 span {
+      color: transparent;
+      background: linear-gradient(90deg, var(--teal) 0%, #8cefe3 42%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .hero-copy {
+      max-width: 690px;
+      margin-bottom: 30px;
+      color: #bdccd6;
+      font-size: clamp(1.03rem, 1.7vw, 1.22rem);
+    }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 19px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      text-decoration: none;
+      font-size: .9rem;
+      font-weight: 850;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+    .button:hover { transform: translateY(-2px); }
+    .button.primary {
+      color: #031315;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--teal), #76e4d7);
+      box-shadow: 0 14px 34px rgba(45, 212, 191, .17);
+    }
+    .button.secondary { background: rgba(255, 255, 255, .035); }
+    .button.secondary:hover { border-color: rgba(45, 212, 191, .5); }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+    .tag {
+      padding: 6px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #aebfca;
+      background: rgba(255, 255, 255, .025);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .035em;
+    }
+
+    .hero-visual {
+      position: relative;
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, .22);
+      border-radius: 28px;
+      background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.018));
+      box-shadow: var(--shadow);
+      transform: rotate(1deg);
+    }
+    .hero-visual::after {
+      content: "CASE RECONSTRUÍDO · DADOS FICTÍCIOS";
+      position: absolute;
+      right: 28px;
+      bottom: -16px;
+      padding: 8px 12px;
+      color: #e6f7f4;
+      border: 1px solid rgba(45, 212, 191, .32);
+      border-radius: 999px;
+      background: #09202b;
+      font-size: .64rem;
+      font-weight: 900;
+      letter-spacing: .09em;
+    }
+    .hero-visual img { border-radius: 19px; }
+
+    .signal-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 70px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(8, 29, 41, .72);
+      box-shadow: 0 18px 45px rgba(0,0,0,.14);
+    }
+    .signal {
+      min-height: 110px;
+      padding: 22px 24px;
+      border-right: 1px solid var(--line);
+    }
+    .signal:last-child { border-right: 0; }
+    .signal strong { display: block; margin-bottom: 4px; font-size: 1rem; }
+    .signal span { color: var(--muted); font-size: .82rem; }
+
+    section { padding: 92px 0; }
+    .section-alt {
+      border-block: 1px solid rgba(148, 163, 184, .1);
+      background: rgba(10, 31, 45, .36);
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: .76fr 1.24fr;
+      gap: 70px;
+      align-items: end;
+      margin-bottom: 46px;
+    }
+    .section-kicker {
+      margin-bottom: 10px;
+      color: var(--teal);
+      font-size: .75rem;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h2 {
+      margin-bottom: 0;
+      font-size: clamp(2rem, 4vw, 3.45rem);
+      line-height: 1.06;
+      letter-spacing: -.045em;
+    }
+    .section-lead {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 1.04rem;
+    }
+
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .card {
+      position: relative;
+      overflow: hidden;
+      min-height: 230px;
+      padding: 27px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: linear-gradient(155deg, rgba(16, 52, 66, .76), rgba(7, 24, 35, .86));
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -36px;
+      bottom: -45px;
+      width: 120px;
+      height: 120px;
+      border: 1px solid rgba(45, 212, 191, .1);
+      border-radius: 50%;
+    }
+    .card-number {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      margin-bottom: 28px;
+      color: #05201f;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--teal), #84eee2);
+      font-size: .77rem;
+      font-weight: 950;
+    }
+    .card h3 { margin-bottom: 10px; font-size: 1.15rem; }
+    .card p { margin-bottom: 0; color: var(--muted); font-size: .9rem; }
+
+    .statement {
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 22px;
+      margin-top: 34px;
+      padding: 28px 30px;
+      border: 1px solid rgba(245, 158, 11, .22);
+      border-radius: var(--radius-sm);
+      background: rgba(245, 158, 11, .055);
+    }
+    .statement-bar { border-radius: 99px; background: linear-gradient(var(--orange), var(--burgundy)); }
+    .statement p { margin: 0; color: #dbe5ea; font-size: 1.02rem; }
+
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      counter-reset: journey;
+    }
+    .journey-step {
+      counter-increment: journey;
+      min-height: 174px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(6, 24, 35, .76);
+    }
+    .journey-step::before {
+      content: counter(journey, decimal-leading-zero);
+      display: block;
+      margin-bottom: 24px;
+      color: var(--orange);
+      font-size: .75rem;
+      font-weight: 950;
+      letter-spacing: .1em;
+    }
+    .journey-step h3 { margin-bottom: 8px; font-size: 1rem; }
+    .journey-step p { margin: 0; color: var(--muted); font-size: .8rem; }
+
+    .demo-frame {
+      margin-top: 38px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,.035);
+      box-shadow: var(--shadow);
+    }
+    .demo-frame img { width: 100%; border-radius: 13px; }
+    .caption { margin: 13px 4px 2px; color: #91a5b2; font-size: .74rem; text-align: center; }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: 1fr 54px 1fr 54px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(45, 212, 191, .08), transparent 45%),
+        rgba(6, 22, 32, .74);
+    }
+    .arch-node {
+      min-height: 142px;
+      display: grid;
+      place-content: center;
+      padding: 20px;
+      border: 1px solid rgba(45, 212, 191, .26);
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(16, 52, 66, .9), rgba(7, 24, 35, .9));
+      text-align: center;
+    }
+    .arch-node.accent { border-color: rgba(245, 158, 11, .36); }
+    .arch-node strong { display: block; margin-bottom: 7px; }
+    .arch-node span { color: var(--muted); font-size: .76rem; }
+    .arch-arrow { color: var(--teal); font-size: 1.55rem; text-align: center; }
+    .arch-support {
+      grid-column: 2 / 5;
+      display: grid;
+      grid-template-columns: 1fr 54px 1fr;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .arch-support .arch-node { min-height: 100px; }
+
+    .truth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 24px; }
+    .truth-card { padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: rgba(10,31,45,.62); }
+    .truth-card b { display: block; margin-bottom: 8px; color: var(--teal); }
+    .truth-card p { margin: 0; color: var(--muted); font-size: .85rem; }
+
+    .states {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      margin-top: 34px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-color: var(--teal-dark) transparent;
+    }
+    .state {
+      min-width: 128px;
+      padding: 16px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.025);
+      text-align: center;
+      font-size: .76rem;
+      font-weight: 800;
+    }
+    .state-arrow { display: grid; place-items: center; color: var(--orange); }
+
+    .role-layout { display: grid; grid-template-columns: .82fr 1.18fr; gap: 24px; }
+    .role-quote {
+      min-height: 100%;
+      padding: 34px;
+      border: 1px solid rgba(45, 212, 191, .22);
+      border-radius: var(--radius);
+      background: linear-gradient(155deg, rgba(15,118,110,.25), rgba(7,24,35,.88));
+    }
+    .role-quote strong { display: block; margin-bottom: 18px; color: var(--teal); font-size: .76rem; letter-spacing: .13em; text-transform: uppercase; }
+    .role-quote blockquote { margin: 0; font-size: clamp(1.45rem, 2.6vw, 2.12rem); line-height: 1.2; letter-spacing: -.035em; }
+    .role-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .role-item { padding: 22px; border: 1px solid var(--line); border-radius: 15px; background: rgba(10,31,45,.72); }
+    .role-item b { display: block; margin-bottom: 7px; font-size: .94rem; }
+    .role-item span { color: var(--muted); font-size: .8rem; }
+
+    .boundary {
+      margin-top: 20px;
+      padding: 19px 22px;
+      border-left: 4px solid var(--orange);
+      border-radius: 0 12px 12px 0;
+      background: rgba(245,158,11,.06);
+      color: #c5d2da;
+      font-size: .84rem;
+    }
+
+    .quality-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; }
+    .quality-card { min-height: 154px; padding: 21px; border: 1px solid var(--line); border-radius: 15px; background: rgba(6,24,35,.76); }
+    .quality-card small { display: block; margin-bottom: 16px; color: var(--orange); font-weight: 900; letter-spacing: .08em; }
+    .quality-card h3 { margin-bottom: 7px; font-size: .96rem; }
+    .quality-card p { margin: 0; color: var(--muted); font-size: .76rem; }
+
+    .qr-focus {
+      display: grid;
+      grid-template-columns: .75fr 1.25fr;
+      gap: 28px;
+      align-items: center;
+      margin-top: 38px;
+      padding: 34px;
+      border: 1px solid rgba(139,41,66,.45);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(139,41,66,.17), rgba(10,31,45,.85));
+    }
+    .qr-symbol {
+      width: 144px;
+      aspect-ratio: 1;
+      margin: auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      padding: 18px;
+      border-radius: 18px;
+      background: #f8fafc;
+      box-shadow: 0 18px 40px rgba(0,0,0,.24);
+    }
+    .qr-symbol i { display: block; background: #071827; }
+    .qr-symbol i:nth-child(3n), .qr-symbol i:nth-child(7n) { background: transparent; }
+    .qr-copy h3 { font-size: 1.55rem; }
+    .qr-copy p { margin: 0; color: var(--muted); }
+
+    .paperless-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .paperless-panel { padding: 30px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(10,31,45,.65); }
+    .paperless-panel h3 { font-size: 1.25rem; }
+    .check-list { list-style: none; padding: 0; margin: 20px 0 0; }
+    .check-list li { position: relative; margin: 12px 0; padding-left: 25px; color: #bccbd4; font-size: .87rem; }
+    .check-list li::before { content: "✓"; position: absolute; left: 0; color: var(--success); font-weight: 900; }
+    .paperless-note { padding: 18px; border: 1px solid rgba(245,158,11,.22); border-radius: 13px; background: rgba(245,158,11,.055); color: #c9d5dc; font-size: .82rem; }
+
+    .docs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .doc-link {
+      min-height: 148px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(6,24,35,.76);
+      text-decoration: none;
+      transition: transform .2s ease, border-color .2s ease;
+    }
+    .doc-link:hover { transform: translateY(-3px); border-color: rgba(45,212,191,.46); }
+    .doc-link small { color: var(--teal); font-weight: 900; letter-spacing: .08em; }
+    .doc-link strong { font-size: 1rem; }
+    .doc-link span { color: var(--muted); font-size: .78rem; }
+
+    .final-cta {
+      padding: 56px;
+      border: 1px solid rgba(45,212,191,.22);
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at 86% 20%, rgba(245,158,11,.13), transparent 28%),
+        linear-gradient(145deg, rgba(15,118,110,.25), rgba(6,24,35,.92));
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .final-cta h2 { max-width: 850px; margin: 0 auto 18px; }
+    .final-cta p { max-width: 720px; margin: 0 auto 28px; color: var(--muted); }
+    .final-cta .actions { justify-content: center; }
+
+    footer { padding: 38px 0 45px; color: #8fa4b1; font-size: .78rem; }
+    .footer-grid { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 25px; border-top: 1px solid var(--line); }
+    .footer-grid p { margin: 0; }
+    .footer-links { display: flex; gap: 16px; }
+    .footer-links a { text-decoration: none; }
+    .footer-links a:hover { color: var(--teal); }
+
+    :focus-visible { outline: 3px solid rgba(56, 189, 248, .8); outline-offset: 3px; }
+
+    @media (max-width: 980px) {
+      .nav-links a:not(.nav-cta) { display: none; }
+      .hero-grid, .section-head, .role-layout, .qr-focus { grid-template-columns: 1fr; }
+      .hero { padding-top: 68px; }
+      .hero-visual { max-width: 720px; }
+      .section-head { gap: 18px; }
+      .signal-strip, .quality-grid { grid-template-columns: repeat(2, 1fr); }
+      .signal:nth-child(2) { border-right: 0; }
+      .signal:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .journey { grid-template-columns: repeat(2, 1fr); }
+      .architecture { grid-template-columns: 1fr; }
+      .architecture > .arch-arrow { transform: rotate(90deg); }
+      .arch-support { grid-column: 1; grid-template-columns: 1fr; width: 100%; }
+      .arch-support .arch-arrow { transform: rotate(90deg); }
+      .qr-symbol { width: 130px; }
+    }
+
+    @media (max-width: 720px) {
+      .container { width: min(calc(100% - 28px), var(--max)); }
+      .brand span:last-child { display: none; }
+      .nav { min-height: 62px; }
+      .nav-cta { padding: 8px 12px; }
+      .hero { padding: 54px 0 42px; }
+      .hero-grid { gap: 40px; }
+      .hero-visual::after { right: 14px; font-size: .55rem; }
+      .signal-strip { margin-top: 48px; }
+      .signal { min-height: 98px; padding: 17px; }
+      section { padding: 66px 0; }
+      .card-grid, .truth-grid, .paperless-grid, .docs-grid { grid-template-columns: 1fr; }
+      .card { min-height: auto; }
+      .journey { grid-template-columns: 1fr; }
+      .journey-step { min-height: auto; }
+      .architecture { padding: 22px; }
+      .role-list { grid-template-columns: 1fr; }
+      .quality-grid { grid-template-columns: 1fr; }
+      .quality-card { min-height: auto; }
+      .qr-focus { padding: 25px; }
+      .final-cta { padding: 38px 23px; }
+      .footer-grid { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+
+    @media print {
+      :root { --text: #111827; --muted: #475569; --line: #cbd5e1; }
+      body { color: #111827; background: #fff; }
+      .site-header, .actions, .demo-frame { display: none !important; }
+      section, .hero { padding: 28px 0; }
+      .card, .journey-step, .arch-node, .role-item, .quality-card, .paperless-panel, .doc-link, .final-cta, .signal-strip {
+        color: #111827;
+        background: #fff;
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      .hero-visual { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#topo" aria-label="Voltar ao início">
+        <span class="brand-mark">LM</span>
+        <span>Laís Moreira · Case Study</span>
+      </a>
+      <nav class="nav-links" aria-label="Navegação principal">
+        <a href="#desafio">Desafio</a>
+        <a href="#jornada">Jornada</a>
+        <a href="#solucao">Solução</a>
+        <a href="#qualidade">Qualidade</a>
+        <a href="#atuacao">Atuação</a>
+        <a class="nav-cta" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero" id="topo">
+      <div class="container">
+        <div class="hero-grid">
+          <div>
+            <p class="eyebrow">Case profissional anonimizado</p>
+            <h1>Da carga em trânsito à <span>descarga conectada.</span></h1>
+            <p class="hero-copy">Business Analysis aplicada a uma jornada mobile de logística portuária: agendamento, documentos digitais, geolocalização, pátio regulado, QR Code, integrações REST e qualidade de ponta a ponta.</p>
+            <div class="actions">
+              <a class="button primary" href="#jornada">Explorar a jornada</a>
+              <a class="button secondary" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study#readme" target="_blank" rel="noopener noreferrer">Documentação completa ↗</a>
+            </div>
+            <div class="tag-row" aria-label="Competências principais">
+              <span class="tag">BUSINESS ANALYSIS</span>
+              <span class="tag">REST APIs</span>
+              <span class="tag">SIT / UAT</span>
+              <span class="tag">MOBILE TESTING</span>
+              <span class="tag">PORT LOGISTICS</span>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <img src="assets/hero.svg" width="1200" height="420" alt="Ilustração conceitual do aplicativo de motoristas para logística portuária">
+          </div>
+        </div>
+
+        <div class="signal-strip" aria-label="Resumo do case">
+          <div class="signal"><strong>Ponta a ponta</strong><span>Necessidade → hypercare</span></div>
+          <div class="signal"><strong>Escopo integrado</strong><span>App, plataforma, pátio e terminal</span></div>
+          <div class="signal"><strong>Qualidade real</strong><span>SIT, UAT e piloto mobile</span></div>
+          <div class="signal"><strong>Foco de negócio</strong><span>Visibilidade do estoque em trânsito</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-alt" id="desafio">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">01 · Desafio de negócio</p>
+            <h2>Planejar antes de a carga chegar.</h2>
+          </div>
+          <p class="section-lead">O estoque físico mostrava apenas parte da operação. Para planejar embarques, o terminal também precisava entender quais cargas estavam programadas, em deslocamento ou aguardando liberação — sem depender de ligações e controles paralelos.</p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card">
+            <span class="card-number">01</span>
+            <h3>Visibilidade fragmentada</h3>
+            <p>Agendamento, transporte, pátio e terminal produziam marcos distintos da mesma jornada.</p>
+          </article>
+          <article class="card">
+            <span class="card-number">02</span>
+            <h3>Sincronização operacional</h3>
+            <p>A chegada do veículo precisava acompanhar a capacidade do terminal, a fila externa e a chamada.</p>
+          </article>
+          <article class="card">
+            <span class="card-number">03</span>
+            <h3>Experiência do motorista</h3>
+            <p>Orientações, documentos, status e autorização de acesso deveriam existir em um fluxo simples e rastreável.</p>
+          </article>
+        </div>
+
+        <div class="statement">
+          <span class="statement-bar" aria-hidden="true"></span>
+          <p><strong>Pergunta central:</strong> como transformar eventos físicos da jornada rodoviária-portuária em informação confiável para o planejamento, oferecendo ao motorista clareza sobre o próximo passo?</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="jornada">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">02 · Jornada digital</p>
+            <h2>O caminho crítico do motorista.</h2>
+          </div>
+          <p class="section-lead">A experiência conecta preparação, deslocamento, espera, autorização e operação. Cada etapa orienta o usuário e produz uma evidência útil para o ecossistema logístico.</p>
+        </div>
+
+        <div class="journey">
+          <article class="journey-step"><h3>Agendamento</h3><p>Janela operacional e compromisso de chegada.</p></article>
+          <article class="journey-step"><h3>Documentos e rota</h3><p>Orientações, arquivos digitais, origem e destino.</p></article>
+          <article class="journey-step"><h3>Viagem</h3><p>Eventos e localização com finalidade definida.</p></article>
+          <article class="journey-step"><h3>Pátio regulado</h3><p>Direcionamento ao ponto de espera correspondente.</p></article>
+          <article class="journey-step"><h3>Check-in</h3><p>Confirmação de chegada e atualização do marco.</p></article>
+          <article class="journey-step"><h3>Chamada</h3><p>Liberação sincronizada com a capacidade do terminal.</p></article>
+          <article class="journey-step"><h3>QR Code</h3><p>Credencial temporária habilitada no estado correto.</p></article>
+          <article class="journey-step"><h3>Descarga</h3><p>Início da operação e transição ao recebimento físico.</p></article>
+        </div>
+
+        <figure class="demo-frame">
+          <img src="assets/demo-flow.gif" width="1280" height="720" loading="lazy" alt="Demonstração animada e conceitual da jornada do motorista">
+          <figcaption class="caption">Demonstração reconstruída com dados fictícios. Não reproduz telas, marca ou informações do ambiente produtivo.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section-alt" id="solucao">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">03 · Solução e integrações</p>
+            <h2>Um evento, vários consumidores.</h2>
+          </div>
+          <p class="section-lead">A arquitetura pública é intencionalmente conceitual. Ela demonstra responsabilidades, origem da informação e fluxo lógico sem revelar topologia, endpoints, payloads, credenciais ou nomes internos.</p>
+        </div>
+
+        <div class="architecture" aria-label="Arquitetura conceitual da solução">
+          <div class="arch-node"><strong>App do motorista</strong><span>Jornada, documentos, localização e QR Code</span></div>
+          <div class="arch-arrow" aria-hidden="true">⇄</div>
+          <div class="arch-node"><strong>Plataforma logística</strong><span>Agendamentos, etapas, identidade e comunicação</span></div>
+          <div class="arch-arrow" aria-hidden="true">⇄</div>
+          <div class="arch-node accent"><strong>Sistema do terminal</strong><span>Capacidade, chamada, acesso e recebimento</span></div>
+          <div class="arch-support">
+            <div class="arch-node"><strong>Pátio regulado</strong><span>Chegada, permanência e saída</span></div>
+            <div class="arch-arrow" aria-hidden="true">⇄</div>
+            <div class="arch-node"><strong>Camada de integração</strong><span>Validação, correlação e tratamento de falhas</span></div>
+          </div>
+        </div>
+
+        <div class="truth-grid">
+          <article class="truth-card"><b>Estoque físico</b><p>Carga efetivamente recebida e confirmada pelo sistema do terminal.</p></article>
+          <article class="truth-card"><b>Estoque em trânsito</b><p>Carga ativa, associada a agendamento e eventos logísticos válidos.</p></article>
+          <article class="truth-card"><b>Exceções</b><p>Atrasos, cancelamentos, divergências ou perda de atualização que exigem análise.</p></article>
+        </div>
+
+        <div class="states" aria-label="Estados conceituais da jornada">
+          <div class="state">Programado</div><div class="state-arrow">→</div>
+          <div class="state">Em trânsito</div><div class="state-arrow">→</div>
+          <div class="state">No pátio</div><div class="state-arrow">→</div>
+          <div class="state">Chamado</div><div class="state-arrow">→</div>
+          <div class="state">Acesso validado</div><div class="state-arrow">→</div>
+          <div class="state">Em descarga</div><div class="state-arrow">→</div>
+          <div class="state">Recebido</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="atuacao">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">04 · Minha atuação</p>
+            <h2>Da necessidade ao comportamento homologado.</h2>
+          </div>
+          <p class="section-lead">Atuação funcional de ponta a ponta, conectando operação, tecnologia, fornecedor e usuários para transformar uma necessidade logística em requisitos testáveis e uma jornada implantável.</p>
+        </div>
+
+        <div class="role-layout">
+          <aside class="role-quote">
+            <strong>Posicionamento profissional</strong>
+            <blockquote>Transformei uma necessidade operacional complexa em requisitos, integrações e critérios de qualidade homologados na jornada real do motorista.</blockquote>
+          </aside>
+          <div class="role-list">
+            <article class="role-item"><b>Análise de negócio</b><span>Necessidade, stakeholders, AS-IS/TO-BE e pontos de integração.</span></article>
+            <article class="role-item"><b>Requisitos e regras</b><span>Comportamentos, estados, exceções e critérios de aceite.</span></article>
+            <article class="role-item"><b>Refinamento técnico</b><span>Interface com fornecedor e acompanhamento do desenvolvimento.</span></article>
+            <article class="role-item"><b>Integrações</b><span>Validação funcional de APIs REST, JSON, retornos e eventos.</span></article>
+            <article class="role-item"><b>Qualidade</b><span>Testes funcionais, negativos, SIT, UAT e piloto mobile.</span></article>
+            <article class="role-item"><b>Implantação</b><span>Gestão de defeitos, retestes, homologação, go-live e hypercare.</span></article>
+          </div>
+        </div>
+
+        <p class="boundary"><strong>Limite de autoria:</strong> este case demonstra análise, especificação, validação e condução funcional. Não reivindica autoria sobre o código-fonte, a interface ou a plataforma de terceiros.</p>
+      </div>
+    </section>
+
+    <section class="section-alt" id="qualidade">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">05 · Estratégia de qualidade</p>
+            <h2>Testar a cadeia, não apenas a tela.</h2>
+          </div>
+          <p class="section-lead">O fluxo só era considerado aprovado quando um evento produzido em uma ponta resultava no estado correto na outra — inclusive em situações de duplicidade, perda de conexão, mudança de ordem ou indisponibilidade.</p>
+        </div>
+
+        <div class="quality-grid">
+          <article class="quality-card"><small>01</small><h3>Rastreabilidade</h3><p>Necessidade, regra, cenário, evidência e resultado.</p></article>
+          <article class="quality-card"><small>02</small><h3>Funcional</h3><p>Fluxos positivos, negativos, mensagens e obrigatoriedade.</p></article>
+          <article class="quality-card"><small>03</small><h3>Integração</h3><p>Eventos, respostas, idempotência e reprocessamento.</p></article>
+          <article class="quality-card"><small>04</small><h3>Mobile</h3><p>Permissões, navegação, documentos e conectividade.</p></article>
+          <article class="quality-card"><small>05</small><h3>SIT</h3><p>Comunicação entre app, plataforma, pátio e terminal.</p></article>
+          <article class="quality-card"><small>06</small><h3>UAT</h3><p>Aderência à rotina e linguagem compreensível ao usuário.</p></article>
+          <article class="quality-card"><small>07</small><h3>Piloto</h3><p>Uso em aparelho real e confronto esperado versus observado.</p></article>
+          <article class="quality-card"><small>08</small><h3>Hypercare</h3><p>Incidentes, correções, retestes e estabilização.</p></article>
+        </div>
+
+        <div class="qr-focus">
+          <div class="qr-symbol" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <div class="qr-copy">
+            <p class="section-kicker">Foco técnico</p>
+            <h3>O QR Code era uma autorização operacional.</h3>
+            <p>Não bastava exibir uma imagem: era necessário validar elegibilidade, chamada do terminal, associação à jornada, leitura, expiração, revogação, duplicidade e retorno do status entre os sistemas.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="paperless">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">06 · Digitalização responsável</p>
+            <h2>Menos papel, mais rastreabilidade.</h2>
+          </div>
+          <p class="section-lead">Agendamento, orientações, documentos e credencial de acesso passaram a compor uma jornada digital, reduzindo dependência de impressos e contatos paralelos sem enfraquecer governança e controles.</p>
+        </div>
+
+        <div class="paperless-grid">
+          <article class="paperless-panel">
+            <h3>Valor habilitado</h3>
+            <ul class="check-list">
+              <li>Acesso digital a documentos associados à operação.</li>
+              <li>Atualização de status sem formulários paralelos.</li>
+              <li>QR Code como credencial rastreável de acesso.</li>
+              <li>Menor necessidade de reimpressão e reenvio.</li>
+              <li>Trilha eletrônica para suporte e auditoria.</li>
+            </ul>
+          </article>
+          <article class="paperless-panel">
+            <h3>Governança documental</h3>
+            <ul class="check-list">
+              <li>Fonte oficial, versão e validade explícitas.</li>
+              <li>Autorização e menor privilégio de acesso.</li>
+              <li>Retenção, descarte e histórico definidos.</li>
+              <li>Proteção contra exposição e alteração indevida.</li>
+            </ul>
+            <p class="paperless-note"><strong>Distinção:</strong> “paperless port” descreve digitalização e redução de papel nesta jornada. O case não afirma integração formal com o sistema governamental Porto Sem Papel.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-alt" id="documentacao">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">07 · Evidências públicas</p>
+            <h2>Explore a documentação do case.</h2>
+          </div>
+          <p class="section-lead">Os artefatos foram reconstruídos e sanitizados para evidenciar competências sem publicar dados, telas, contratos, endpoints ou documentos internos.</p>
+        </div>
+
+        <div class="docs-grid">
+          <a class="doc-link" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study/blob/main/docs/01-business-context.md" target="_blank" rel="noopener noreferrer"><small>NEGÓCIO</small><strong>Contexto e problema</strong><span>Objetivos, stakeholders e recorte.</span></a>
+          <a class="doc-link" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study/blob/main/docs/02-driver-journey-and-requirements.md" target="_blank" rel="noopener noreferrer"><small>PRODUTO</small><strong>Jornada e requisitos</strong><span>Capacidades, exceções e estados.</span></a>
+          <a class="doc-link" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study/blob/main/docs/03-solution-and-integrations.md" target="_blank" rel="noopener noreferrer"><small>TÉCNICO</small><strong>Solução e integrações</strong><span>Eventos, fontes e responsabilidades.</span></a>
+          <a class="doc-link" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study/blob/main/docs/04-quality-strategy.md" target="_blank" rel="noopener noreferrer"><small>QUALIDADE</small><strong>Estratégia de testes</strong><span>SIT, UAT, mobile e rastreabilidade.</span></a>
+          <a class="doc-link" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study/blob/main/docs/05-pilot-go-live-hypercare.md" target="_blank" rel="noopener noreferrer"><small>IMPLANTAÇÃO</small><strong>Piloto ao hypercare</strong><span>Go/no-go, suporte e estabilização.</span></a>
+          <a class="doc-link" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study/blob/main/docs/07-evidence-map.md" target="_blank" rel="noopener noreferrer"><small>PORTFÓLIO</small><strong>Mapa de evidências</strong><span>Competências e entregáveis relacionados.</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="final-cta">
+          <p class="section-kicker">Conclusão</p>
+          <h2>Negócio, integração e operação falando a mesma língua.</h2>
+          <p>Este case mostra como traduzi um fluxo portuário complexo em requisitos, regras, eventos e critérios de qualidade capazes de sustentar uma implantação real.</p>
+          <div class="actions">
+            <a class="button primary" href="https://www.linkedin.com/in/lais-moreira-lm1698/" target="_blank" rel="noopener noreferrer">Conectar no LinkedIn ↗</a>
+            <a class="button secondary" href="https://github.com/laismoreira07/driver-app-port-logistics-case-study" target="_blank" rel="noopener noreferrer">Ver repositório completo ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <p><strong>Laís Moreira</strong> · Business Analyst | Sistemas, Dados, Processos e Integrações</p>
+      <div class="footer-links">
+        <a href="https://github.com/laismoreira07/driver-app-port-logistics-case-study/blob/main/DISCLAIMER.md" target="_blank" rel="noopener noreferrer">Confidencialidade</a>
+        <a href="#topo">Voltar ao topo ↑</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
