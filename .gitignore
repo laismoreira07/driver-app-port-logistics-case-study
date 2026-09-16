@@ -1,0 +1,25 @@
+# Source material must never be committed
+source-material/
+private/
+raw/
+uploads/
+
+# Secrets and local configuration
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Generated temporary files
+tmp/
+__pycache__/
+*.pyc

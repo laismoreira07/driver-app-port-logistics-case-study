@@ -1,0 +1,7 @@
+* text=auto eol=lf
+
+*.gif binary
+*.png binary
+
+tools/*.py linguist-vendored=true
+tools/requirements.txt linguist-vendored=true
