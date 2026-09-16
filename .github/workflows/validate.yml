@@ -1,0 +1,27 @@
+name: Validate public case study
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check repository integrity
+        run: python3 tools/validate_repo.py
+
+      - name: Scan for common publication risks
+        run: python3 tools/privacy_check.py
