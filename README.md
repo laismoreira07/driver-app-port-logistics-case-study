@@ -54,6 +54,20 @@ A solução integrou aplicativo de motoristas, plataforma logística, pátios e 
 | Acesso | QR Code habilitado para validação | Controle de elegibilidade e rastreabilidade |
 | Operação | Início da descarga e atualização de status | Transição do trânsito para o recebimento físico |
 
+## Demonstração em vídeo
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=totVmB7-jHs">
+    <img src="assets/demo-flow-preview.png" alt="Assistir à demonstração completa da jornada digital do motorista" width="900">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=totVmB7-jHs"><strong>▶ Assistir à demonstração completa no YouTube</strong></a>
+</p>
+
+> Vídeo conceitual produzido com apoio de IA generativa e dados fictícios. Não reproduz telas, marcas, documentos, rotas ou informações do ambiente original.
+
 ## Jornada ponta a ponta
 
 ```mermaid
